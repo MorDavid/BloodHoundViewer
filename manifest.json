@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "MD Extension - BloodHound",
+  "version": "1.0",
+  "description": "Bloodhound extension from Mor David.",
+  "permissions": ["scripting", "activeTab"],
+  "host_permissions": ["http://*:6990/*", "https://*:6990/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [{
+    "resources": ["dark-logo.png", "white-logo.png"],
+    "matches": ["http://*:6990/*", "https://*:6990/*"]
+  }],
+  "content_scripts": [
+    {
+      "matches": ["http://*:6990/*", "https://*:6990/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
