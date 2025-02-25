@@ -31,4 +31,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - Inspired by the history feature from Legacy BloodHound
 - Built for the BloodHound Community Edition
 
-
