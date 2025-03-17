@@ -1,5 +1,8 @@
 # BloodHound Viewer 
 
+## Stay Updated on Telegram (RootSec - Cyber Write ups & Tools)
+[https://t.me/root_sec](https://t.me/root_sec)
+
 ### BloodHound CE Enhancement Extension - A Chrome extension that enhances BloodHound Community Edition with additional features including query history navigation, improved layout controls, and Neo4j button.
 
 ### Features
