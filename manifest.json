@@ -1,21 +1,30 @@
 {
   "manifest_version": 3,
-  "name": "MD Extension - BloodHound",
+  "name": "BloodHound  Viewer",
   "version": "1.0",
-  "description": "Bloodhound extension from Mor David.",
-  "permissions": ["scripting", "activeTab"],
-  "host_permissions": ["http://*:8080/*", "https://*:8080/*"],
-  "background": {
-    "service_worker": "background.js"
-  },
+  "description": "BloodHound Viewer extension by Mor David, 2025",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*"
+  ],
   "web_accessible_resources": [{
-    "resources": ["dark-logo.png", "white-logo.png"],
-    "matches": ["http://*:8080/*", "https://*:8080/*"]
+    "resources": ["logo.png"],
+    "matches": ["<all_urls>"]
   }],
   "content_scripts": [
     {
-      "matches": ["http://*:8080/*", "https://*:8080/*"],
-      "js": ["content.js"]
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
     }
-  ]
+  ],
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  }
 }

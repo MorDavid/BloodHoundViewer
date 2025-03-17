@@ -22,13 +22,15 @@
 After installation, the extension automatically activates when you visit BloodHound CE:
 - Use the Back/Forward buttons above the query editor to navigate through your query history
 - Click the Neo4j icon in the header to open the Neo4j browser
-- Use the simplified layout controls for Standard and Sequential graph layouts
-
-### Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Acknowledgments
 - Inspired by the history feature from Legacy BloodHound
 - Built for the BloodHound Community Edition
 
+## License
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
+<a href="https://www.buymeacoffee.com/mordavid" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
+## Upcoming
+- AI Support and many more..
