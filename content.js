@@ -12,13 +12,14 @@ if (document.title === "BloodHound") {
         addNavigationButtons();
         addNeo4jLink();
         removeUnwantedElement();
-        adjustContainerWidth();
+        // Width adjustment disabled due to UI issues
+        // adjustContainerWidth();
     }
 
     // Function to handle Cypher tab click
     function handleCypherTabClick() {
-        const cypherTabXPath = "/html/body/div[1]/div[1]/div/div/div/div/div[2]/div[1]/div[1]/div[1]/div/div/div/button[3]";
-        const cypherTab = document.evaluate(cypherTabXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        const tabButtons = Array.from(document.querySelectorAll('button[role="tab"]'));
+        const cypherTab = tabButtons.find(tab => tab.title === "Cypher" || tab.textContent?.includes("Cypher"));
         
         if (cypherTab && !hasAddedCypherListener) {
             cypherTab.addEventListener('click', () => {
@@ -59,12 +60,55 @@ if (document.title === "BloodHound") {
     });
 
     async function addNavigationButtons() {
-        const runButtonXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[1]/div[2]/div/div/div/div[2]/button[2]";
-        const runButton = document.evaluate(runButtonXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        // Find the Run button with the enhanced detection
+        const runButtons = Array.from(document.querySelectorAll('button'));
+        const runButton = runButtons.find(btn => {
+            const text = btn.textContent || '';
+            // Match either text containing "Run" or a play icon
+            return (text.includes('Run') && 
+                   (btn.querySelector('.fa-play') !== null || 
+                    btn.innerHTML.includes('play') || 
+                    btn.innerHTML.includes('svg')));
+        });
 
         // Check if buttons already exist
         if (runButton && !document.querySelector('[data-nav-buttons="true"]')) {
-            const buttonContainer = document.createElement('div');
+            // Find a good parent container for the navigation buttons
+            let buttonContainer;
+            
+            // For newer BloodHound UI (as in screenshot)
+            const newUIParent = runButton.parentNode;
+            if (newUIParent) {
+                // Create button container that matches UI style
+                buttonContainer = document.createElement('div');
+                buttonContainer.style.display = 'flex';
+                buttonContainer.style.gap = '5px';
+                buttonContainer.style.marginRight = '8px';
+                
+                // Create buttons with appropriate styling
+                const backButton = document.createElement('button');
+                backButton.className = runButton.className; // Copy styling from run button
+                backButton.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="backward" class="svg-inline--fa fa-backward" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="height: 1em;"><path fill="currentColor" d="M459.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V96c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L288 214.3V256v41.7L459.5 440.6zM256 352V256 128 96c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4l-192 160C4.2 237.5 0 246.5 0 256s4.2 18.5 11.5 24.6l192 160c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V352z"/></svg>';
+                backButton.setAttribute('data-nav-buttons', 'true');
+                backButton.onclick = () => navigateHistory(-1);
+                
+                const forwardButton = document.createElement('button');
+                forwardButton.className = runButton.className; // Copy styling from run button
+                forwardButton.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="forward" class="svg-inline--fa fa-forward" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="height: 1em;"><path fill="currentColor" d="M52.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S0 428.4 0 416V96C0 83.6 7.2 72.3 18.4 67s24.5-3.6 34.1 4.4L224 214.3V256v41.7L52.5 440.6zM256 352V256 128 96c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l192 160c7.3 6.1 11.5 15.1 11.5 24.6s-4.2 18.5-11.5 24.6l-192 160c-9.5 7.9-22.8 9.7-34.1 4.4s-18.4-16.6-18.4-29V352z"/></svg>';
+                forwardButton.setAttribute('data-nav-buttons', 'true');
+                forwardButton.onclick = () => navigateHistory(1);
+                
+                buttonContainer.appendChild(backButton);
+                buttonContainer.appendChild(forwardButton);
+                
+                // Insert buttons before the run button
+                newUIParent.insertBefore(buttonContainer, runButton);
+                console.log("[+] Added navigation buttons to new UI");
+                return;
+            }
+            
+            // Fall back to old approach if new UI layout not detected
+            buttonContainer = document.createElement('div');
             buttonContainer.style.display = 'flex';
             buttonContainer.style.gap = '5px';
             buttonContainer.style.alignItems = 'center';
@@ -74,9 +118,15 @@ if (document.title === "BloodHound") {
             buttonContainer.style.marginBottom = '5px';
             buttonContainer.style.overflow = 'visible';
 
-            // Move Save Query button
-            const saveQueryButtonXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[1]/div[2]/div/div/div/div[2]/button[1]";
-            const saveQueryButton = document.evaluate(saveQueryButtonXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            // Find and move Save Query button - also using a more robust selector
+            const saveButtons = Array.from(document.querySelectorAll('button'));
+            const saveQueryButton = saveButtons.find(btn => {
+                const text = btn.textContent || '';
+                return (text.includes('Save Query') &&
+                       (btn.querySelector('.fa-floppy-disk') !== null ||
+                        btn.innerHTML.includes('floppy') ||
+                        btn.innerHTML.includes('save')));
+            });
             
             if (saveQueryButton) {
                 saveQueryButton.style.order = '-1';
@@ -103,9 +153,16 @@ if (document.title === "BloodHound") {
     }
 
     function checkForRunButton() {
-        // Fixed XPath for the Run button
-        const runButtonXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[1]/div[2]/div/div/div/div[2]/button";
-        const runButton = document.evaluate(runButtonXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        // Try to find the Run button with multiple strategies
+        const runButtons = Array.from(document.querySelectorAll('button'));
+        const runButton = runButtons.find(btn => {
+            const text = btn.textContent || '';
+            // Match either text containing "Run" or a play icon
+            return (text.includes('Run') && 
+                   (btn.querySelector('.fa-play') !== null || 
+                    btn.innerHTML.includes('play') || 
+                    btn.innerHTML.includes('svg')));
+        });
         
         if (runButton && !runButton.hasAttribute('data-save-listener')) {
             console.log("[+] Found run button, adding click listener");
@@ -154,51 +211,76 @@ if (document.title === "BloodHound") {
     }
 
     function getQueryText() {
-        const editorXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[1]/div[2]/div/div/div/div[1]/div/div/div/div[2]/div[2]";
-        const editor = document.evaluate(editorXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        
-        if (!editor) return "";
-
-        // Get all lines and their content
-        const lines = [];
-        let currentLine = "";
-        let inMatch = false;
-        let inReturn = false;
-        let inLimit = false;
-
-        editor.querySelectorAll('.cm-line').forEach(line => {
-            const tokens = Array.from(line.childNodes).map(node => {
-                if (node.nodeType === Node.TEXT_NODE) return node.textContent;
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    const text = node.textContent;
-                    if (text.toUpperCase() === 'MATCH') inMatch = true;
-                    if (text.toUpperCase() === 'RETURN') inReturn = true;
-                    if (text.toUpperCase() === 'LIMIT') inLimit = true;
+        try {
+            // Approach 0: Use specific XPath provided
+            const specificXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[2]/div/div/div[1]/div/div/div/div[2]/div[2]";
+            const specificEditor = document.evaluate(specificXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            if (specificEditor) {
+                // Extract text from all cm-line divs
+                const lines = specificEditor.querySelectorAll('.cm-line');
+                if (lines.length > 0) {
+                    const text = Array.from(lines).map(line => line.textContent).join('\n');
+                    console.log("[+] Got query text from specific XPath editor:", text);
                     return text;
                 }
-                return '';
-            });
-
-            currentLine = tokens.join('').trim();
-            if (currentLine) lines.push(currentLine);
-        });
-
-        // Format the query properly
-        let query = lines.join(' ');
-        
-        // Add proper spacing around keywords and operators
-        query = query.replace(/MATCH/gi, 'MATCH ')
-                    .replace(/WHERE/gi, ' WHERE ')
-                    .replace(/RETURN/gi, ' RETURN ')
-                    .replace(/LIMIT/gi, ' LIMIT ')
-                    .replace(/\s+/g, ' ')
-                    .replace(/\(\s+/g, '(')
-                    .replace(/\s+\)/g, ')')
-                    .replace(/\[\s+/g, '[')
-                    .replace(/\s+\]/g, ']')
-                    .trim();
-
-        return query;
+                
+                // If no cm-lines, get the raw text content
+                const text = specificEditor.textContent;
+                if (text && text.trim() !== "") {
+                    console.log("[+] Got raw text from specific XPath editor:", text);
+                    return text;
+                }
+            }
+            
+            // Approach 1: Modern editor with role=textbox
+            const modernEditor = document.querySelector('[role="textbox"]');
+            if (modernEditor) {
+                const text = modernEditor.textContent;
+                console.log("[+] Got query text from modern editor:", text);
+                return text;
+            }
+            
+            // Approach 2: Try CM Editor
+            const queryBox = document.querySelector('.cm-editor.cm-cypher');
+            if (queryBox) {
+                // Try to get text from cm-line divs (formatted query)
+                const lines = queryBox.querySelectorAll('.cm-line');
+                if (lines.length > 0) {
+                    const text = Array.from(lines).map(line => line.textContent).join('\n');
+                    console.log("[+] Got query text from CM editor lines:", text);
+                    return text;
+                }
+                
+                // Fall back to raw text content
+                const text = queryBox.textContent;
+                console.log("[+] Got raw query text from CM editor:", text);
+                return text;
+            }
+            
+            // Approach 3: Try jss52 editor
+            const jssEditor = document.querySelector('.jss52');
+            if (jssEditor) {
+                const text = jssEditor.textContent;
+                console.log("[+] Got query text from jss editor:", text);
+                return text;
+            }
+            
+            // Approach 4: Try to find any div containing Cypher-like content
+            const allDivs = document.querySelectorAll('div');
+            for (const div of allDivs) {
+                const text = div.textContent || "";
+                if (text.includes("MATCH") && text.includes("RETURN") && text.length > 20) {
+                    console.log("[+] Found Cypher-like content in div:", text);
+                    return text;
+                }
+            }
+            
+            console.log("[-] Could not find the query editor");
+            return "";
+        } catch (error) {
+            console.error("Error getting query text:", error);
+            return "";
+        }
     }
 
     function saveCurrentQuery() {
@@ -262,53 +344,219 @@ if (document.title === "BloodHound") {
                 return;
             }
 
-            // Update query box with historical query
-            const queryBoxXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[1]/div[2]/div/div/div/div[1]/div/div/div/div[2]/div[2]/div";
-            const queryBox = document.evaluate(queryBoxXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            // Try multiple approaches to set text to the query editor
+            const queryText = savedQueries[currentQueryIndex].query;
             
+            // Approach 0: Use specific XPath provided
+            const specificXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[2]/div/div/div[1]/div/div/div/div[2]/div[2]";
+            const specificEditor = document.evaluate(specificXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            if (specificEditor) {
+                // Clear existing content and create appropriate structure
+                specificEditor.innerHTML = "";
+                
+                // Split the query into lines and create a line div for each
+                const queryLines = queryText.split('\n');
+                queryLines.forEach(line => {
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = "cm-line";
+                    lineDiv.textContent = line;
+                    specificEditor.appendChild(lineDiv);
+                });
+                
+                console.log("[+] Set query text to specific XPath editor");
+                isNavigating = false;
+                return;
+            }
+            
+            // Approach 1: Modern editor with role=textbox (from screenshot)
+            const modernEditor = document.querySelector('[role="textbox"]');
+            if (modernEditor) {
+                modernEditor.textContent = queryText;
+                console.log("[+] Set query text to modern editor");
+                isNavigating = false;
+                return;
+            }
+            
+            // Approach 2: CM Editor
+            let queryBox = document.querySelector('.cm-editor.cm-cypher');
             if (queryBox) {
                 // Clear existing content
                 queryBox.innerHTML = "";
                 
                 // Split the query into lines and create a line div for each
-                const queryLines = savedQueries[currentQueryIndex].query.split('\n');
+                const queryLines = queryText.split('\n');
                 queryLines.forEach(line => {
                     const lineDiv = document.createElement('div');
                     lineDiv.className = "cm-line";
                     lineDiv.textContent = line;
                     queryBox.appendChild(lineDiv);
                 });
+                console.log("[+] Set query text to CM editor");
+                isNavigating = false;
+                return;
             }
+            
+            // Approach 3: jss52 editor
+            const jssEditor = document.querySelector('.jss52');
+            if (jssEditor) {
+                jssEditor.textContent = queryText;
+                console.log("[+] Set query text to jss editor");
+                isNavigating = false;
+                return;
+            }
+            
+            console.log("[-] Could not find a suitable editor to set the query text");
+        } catch (error) {
+            console.error("Error navigating history:", error);
         } finally {
             isNavigating = false;
         }
     }
 
     function checkForCypherQuery() {
-        const queryBoxXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[1]/div[2]/div/div/div/div[1]/div/div/div/div[2]/div[2]";
-        const queryBox = document.evaluate(queryBoxXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        // Try multiple approaches to find the Cypher editor
+        
+        // Approach 0: Use specific XPath provided
+        const specificXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[2]/div/div/div[1]/div/div/div/div[2]/div[2]";
+        const specificEditor = document.evaluate(specificXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        if (specificEditor) {
+            console.log("[+] Found Cypher editor using specific XPath");
+            addNavigationButtons();
+            
+            // Only load last query once when page first loads
+            if (!hasLoadedInitialQuery) {
+                const savedQueries = JSON.parse(localStorage.getItem('savedQueries') || '[]');
+                if (savedQueries.length > 0) {
+                    currentQueryIndex = savedQueries.length - 1;
+                    const lastQuery = savedQueries[currentQueryIndex];
+                    
+                    // Clear existing content and create appropriate structure
+                    specificEditor.innerHTML = "";
+                    
+                    // Split the query into lines and create a line div for each
+                    const queryLines = lastQuery.query.split('\n');
+                    queryLines.forEach(line => {
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = "cm-line";
+                        lineDiv.textContent = line;
+                        specificEditor.appendChild(lineDiv);
+                    });
+                    
+                    // Find the Run button
+                    const runButtons = Array.from(document.querySelectorAll('button'));
+                    const runButton = runButtons.find(btn => {
+                        const btnText = btn.textContent || '';
+                        return btnText.includes('Run') && 
+                            (btn.querySelector('.fa-play') !== null || 
+                             btn.innerHTML.includes('play') ||
+                             btn.innerHTML.includes('svg'));
+                    });
+                    
+                    if (runButton) {
+                        console.log("[+] Running last query:", lastQuery.query);
+                        setTimeout(() => {
+                            runButton.click();
+                        }, 100);
+                    } else {
+                        console.log("[-] Run button not found");
+                    }
+                    
+                    hasLoadedInitialQuery = true;  // Set the flag after loading
+                }
+            }
+            return true;
+        }
+        
+        // Approach 1: Modern editor with role=textbox (shown in screenshot)
+        const modernEditor = document.querySelector('[role="textbox"]');
+        if (modernEditor) {
+            console.log("[+] Found modern editor with role=textbox");
+            addNavigationButtons();
+            
+            // Only load last query once when page first loads
+            if (!hasLoadedInitialQuery) {
+                const savedQueries = JSON.parse(localStorage.getItem('savedQueries') || '[]');
+                if (savedQueries.length > 0) {
+                    currentQueryIndex = savedQueries.length - 1;
+                    const lastQuery = savedQueries[currentQueryIndex];
+                    
+                    // Set the text in the editor
+                    modernEditor.textContent = lastQuery.query;
+                    
+                    // Find the Run button
+                    const runButtons = Array.from(document.querySelectorAll('button'));
+                    const runButton = runButtons.find(btn => {
+                        const btnText = btn.textContent || '';
+                        return btnText.includes('Run') && 
+                            (btn.querySelector('.fa-play') !== null || 
+                             btn.innerHTML.includes('play') ||
+                             btn.innerHTML.includes('svg'));
+                    });
+                    
+                    if (runButton) {
+                        console.log("[+] Running last query:", lastQuery.query);
+                        setTimeout(() => {
+                            runButton.click();
+                        }, 100);
+                    } else {
+                        console.log("[-] Run button not found");
+                    }
+                    
+                    hasLoadedInitialQuery = true;  // Set the flag after loading
+                    return true;
+                }
+            }
+            return true;
+        }
+        
+        // Try to find the CodeMirror editor (older UI)
+        let queryBox = document.querySelector('.cm-editor.cm-cypher');
+        if (!queryBox) {
+            // Try alternative selector
+            queryBox = document.querySelector('.jss52');
+        }
+        
+        if (!queryBox) {
+            queryBox = document.querySelector('[role="textbox"] .cm-editor');
+        }
+        
         if (queryBox) {
             const text = queryBox.textContent || "";
-            if (text.includes("Cypher Query")) {
-                console.log("[+] Cypher Query detected");
+            if (text.includes("Cypher Query") || text.trim() === "") {
+                console.log("[+] Cypher Query detected or empty editor found");
                 addNavigationButtons();
                 
                 // Only load last query once when page first loads
-                if (!hasLoadedInitialQuery && text.trim() === "Cypher Query") {
+                if (!hasLoadedInitialQuery && (text.trim() === "Cypher Query" || text.trim() === "")) {
                     const savedQueries = JSON.parse(localStorage.getItem('savedQueries') || '[]');
                     if (savedQueries.length > 0) {
                         currentQueryIndex = savedQueries.length - 1;
                         const lastQuery = savedQueries[currentQueryIndex];
                         
-                        queryBox.textContent = lastQuery.query;
-                        
-                        const runButtonXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[1]/div[2]/div/div/div/div[2]/button[2]";
-                        const runButton = document.evaluate(runButtonXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-                        if (runButton) {
-                            console.log("[+] Running last query:", lastQuery.query);
-                            setTimeout(() => {
-                                runButton.click();
-                            }, 100);
+                        // Attempt to populate the query box
+                        try {
+                            queryBox.textContent = lastQuery.query;
+                            
+                            // Find the Run button
+                            const runButtons = Array.from(document.querySelectorAll('button'));
+                            const runButton = runButtons.find(btn => {
+                                const btnText = btn.textContent || '';
+                                return btnText.includes('Run') && 
+                                    (btn.querySelector('.fa-play') !== null || 
+                                     btn.innerHTML.includes('play') ||
+                                     btn.innerHTML.includes('svg'));
+                            });
+                            
+                            if (runButton) {
+                                console.log("[+] Running last query:", lastQuery.query);
+                                setTimeout(() => {
+                                    runButton.click();
+                                }, 100);
+                            } else {
+                                console.log("[-] Run button not found");
+                            }
+                        } catch (error) {
+                            console.error("Error applying last query:", error);
                         }
                         hasLoadedInitialQuery = true;  // Set the flag after loading
                     }
@@ -327,9 +575,11 @@ if (document.title === "BloodHound") {
             const li = document.createElement('li');
             li.className = "h-10 px-2 mx-2 flex items-center rounded text-neutral-dark-0 dark:text-neutral-light-1 hover:text-secondary dark:hover:text-secondary-variant-2";
             
-            // Get current origin from window.location
+            // Get current host from window.location.origin
             const origin = window.location.origin;
-            const neo4jUrl = `${origin.replace(/:\d+$/, '')}:7474`;
+            // Extract hostname (server or IP) without port
+            const hostname = window.location.hostname;
+            const neo4jUrl = `http://${hostname}:7474`;
             
             li.innerHTML = `
                 <a href="#" data-testid="global_nav-neo4j" class="h-10 w-auto absolute left-12 flex items-center gap-x-2 hover:underline group-hover:w-full group-hover:opacity-100 group-hover:flex group-hover:items-center group-hover:gap-x-5 cursor-pointer">
@@ -352,96 +602,39 @@ if (document.title === "BloodHound") {
     }
 
     function removeUnwantedElement() {
-        const elementXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]/div[1]/div[2]/div/div/div/div[2]/a";
-        const element = document.evaluate(elementXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        if (element) {
-            element.remove();
+        // Look for links in the cypher query area
+        const cyperContainer = document.querySelector('[role="tabpanel"]');
+        if (cyperContainer) {
+            const links = cyperContainer.querySelectorAll('a');
+            links.forEach(link => {
+                if (!link.getAttribute('data-testid') && !link.hasAttribute('data-preserved')) {
+                    link.remove();
+                }
+            });
         }
     }
 
     function adjustContainerWidth() {
-        const containerXPath = "/html/body/div[1]/div/div/div/div/div/div[2]/div[1]";
-        const container = document.evaluate(containerXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        if (container) {
-            //console.log("[+] Found container, current width:", container.style.width);
-            container.style.width = '38%';
-            container.style.maxWidth = '38%';
-            container.style.flexBasis = 'unset !important';
-            container.style.boxSizing = 'border-box';
-            container.style.webkitBoxFlex = '0';
-            container.style.webkitFlexBasis = 'unset !important';
-            container.style.msFlexPreferredSize = 'unset !important';
-            
-            // Override the flex-basis for the parent container
-            const parentElement = container.closest('.css-11n9kbb');
-            if (parentElement) {
-                parentElement.style.flexBasis = 'unset !important';
-                parentElement.style.webkitFlexBasis = 'unset !important';
-                parentElement.style.msFlexPreferredSize = 'unset !important';
-                parentElement.style.width = '38%';
-            }
-            
-            // Add a style tag to override the media query
-            const styleId = 'override-flex-basis';
-            if (!document.getElementById(styleId)) {
-                const style = document.createElement('style');
-                style.id = styleId;
-                style.textContent = `
-                    @media (min-width: 1536px) {
-                        .css-linkbkb {
-                            flex-basis: unset !important;
-                            -webkit-flex-basis: unset !important;
-                            -ms-flex-preferred-size: unset !important;
-                        }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            //console.log("[+] Updated container width to:", container.style.width);
-        } else {
-            console.log("[-] Container not found");
-        }
-    }
-
-    async function refreshServerCache() {
-        try {
-            // Get Flask server address from input
-            const serverInput = document.querySelector('[data-server-address="true"]');
-            const serverAddress = serverInput ? serverInput.value : 'localhost:5000';
-            
-            console.log("[+] Refreshing server cache:", serverAddress);
-            const response = await fetch(`http://${serverAddress}/refresh`, {
-                method: 'POST',
-                mode: 'cors',
-                credentials: 'omit',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
-
-            console.log("[+] Response received:", response);
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            console.log("[+] Cache refreshed:", data);
-            
-            // Show success message
-            alert(`Cache refreshed successfully!\n\nNodes: ${data.data.regular_nodes}\nRelationships: ${data.data.regular_relationships}\nAzure Nodes: ${data.data.azure_nodes}\nAzure Relationships: ${data.data.azure_relationships}`);
-            
-        } catch (error) {
-            console.error('Error:', error);
-            alert(`Error refreshing cache: ${error.message}. Please try again.`);
+        // Width adjustments were causing issues and are no longer needed
+        // This function is kept for compatibility but doesn't modify width
+        
+        // Add a style tag to override any problematic media queries
+        const styleId = 'override-flex-basis';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                /* Media query overrides disabled */
+            `;
+            document.head.appendChild(style);
         }
     }
 
     if (window.location.href.includes('ui/explore')) {
         // Initial check for run button and container width
         checkForRunButton();
-        adjustContainerWidth();
+        // Width adjustment disabled due to UI issues
+        // adjustContainerWidth();
         
         // Reduced interval to 100ms
         const intervalId = setInterval(async () => {
