@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "BloodHound  Viewer",
+  "name": "BloodHound Viewer",
   "version": "1.0",
-  "description": "BloodHound Viewer extension by Mor David, 2025",
+  "description": "BloodHound Viewer extension by Mor David. Adds history buttons, Neo4j link, and more. Support development via PayPal/BuyMeACoffee.",
   "permissions": [
     "storage",
     "activeTab"

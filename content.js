@@ -4,6 +4,8 @@ if (document.title === "BloodHound") {
     let isNavigating = false;
     let lastUrl = window.location.href;
     let hasAddedCypherListener = false;
+    let hasShownDonationPopup = false;
+    let hasAddedNeo4jLink = false;
 
     // Function to apply all UI changes at once
     function applyAllChanges() {
@@ -14,6 +16,152 @@ if (document.title === "BloodHound") {
         removeUnwantedElement();
         // Width adjustment disabled due to UI issues
         // adjustContainerWidth();
+        
+        // Show donation popup after a delay if not shown before or if the 2-week period has expired
+        const popupShownUntil = localStorage.getItem('donation_popup_shown_until');
+        const shouldShowPopup = !popupShownUntil || new Date() > new Date(popupShownUntil);
+        
+        if (!hasShownDonationPopup && shouldShowPopup) {
+            setTimeout(showDonationPopup, 5000);
+        }
+    }
+
+    // Function to show donation popup
+    function showDonationPopup() {
+        if (hasShownDonationPopup) return;
+        
+        // Create popup container
+        const popupContainer = document.createElement('div');
+        popupContainer.style.position = 'fixed';
+        popupContainer.style.bottom = '20px';
+        popupContainer.style.right = '20px';
+        popupContainer.style.width = '320px';
+        popupContainer.style.backgroundColor = '#ffffff';
+        popupContainer.style.borderRadius = '8px';
+        popupContainer.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+        popupContainer.style.zIndex = '9999';
+        popupContainer.style.padding = '16px';
+        popupContainer.style.display = 'flex';
+        popupContainer.style.flexDirection = 'column';
+        popupContainer.style.gap = '12px';
+        popupContainer.style.border = '1px solid #e0e0e0';
+        
+        // Create header
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        
+        const title = document.createElement('h3');
+        title.textContent = 'Support BloodHound Viewer';
+        title.style.margin = '0';
+        title.style.fontSize = '18px';
+        title.style.fontWeight = 'bold';
+        title.style.color = '#333';
+        
+        const closeButton = document.createElement('button');
+        closeButton.innerHTML = '&times;';
+        closeButton.style.background = 'none';
+        closeButton.style.border = 'none';
+        closeButton.style.fontSize = '24px';
+        closeButton.style.cursor = 'pointer';
+        closeButton.style.padding = '0';
+        closeButton.style.lineHeight = '1';
+        closeButton.style.color = '#666';
+        
+        header.appendChild(title);
+        header.appendChild(closeButton);
+        
+        // Create content
+        const content = document.createElement('div');
+        content.innerHTML = `
+            <p style="margin: 0 0 12px; color: #555; font-size: 14px;">
+                If you find this extension useful, please consider supporting its development.
+            </p>
+        `;
+        
+        // Create donation buttons container
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.style.display = 'flex';
+        buttonsContainer.style.flexDirection = 'column';
+        buttonsContainer.style.gap = '8px';
+        
+        // PayPal button
+        const paypalButton = document.createElement('a');
+        paypalButton.href = 'https://www.paypal.com/donate/?hosted_button_id=QWKQ9Q4Y493J2';
+        paypalButton.target = '_blank';
+        paypalButton.style.backgroundColor = '#0070ba';
+        paypalButton.style.color = '#ffffff';
+        paypalButton.style.padding = '10px 16px';
+        paypalButton.style.borderRadius = '4px';
+        paypalButton.style.textDecoration = 'none';
+        paypalButton.style.fontWeight = 'bold';
+        paypalButton.style.fontSize = '14px';
+        paypalButton.style.display = 'flex';
+        paypalButton.style.alignItems = 'center';
+        paypalButton.style.justifyContent = 'center';
+        paypalButton.style.gap = '8px';
+        paypalButton.innerHTML = `Donate with PayPal`;
+        
+        // Buy Me A Coffee button
+        const coffeeButton = document.createElement('a');
+        coffeeButton.href = 'https://buymeacoffee.com/mordavid';
+        coffeeButton.target = '_blank';
+        coffeeButton.style.backgroundColor = '#FFDD00';
+        coffeeButton.style.color = '#000000';
+        coffeeButton.style.padding = '10px 16px';
+        coffeeButton.style.borderRadius = '4px';
+        coffeeButton.style.textDecoration = 'none';
+        coffeeButton.style.fontWeight = 'bold';
+        coffeeButton.style.fontSize = '14px';
+        coffeeButton.style.display = 'flex';
+        coffeeButton.style.alignItems = 'center';
+        coffeeButton.style.justifyContent = 'center';
+        coffeeButton.style.gap = '8px';
+        coffeeButton.innerHTML = `Buy Me A Coffee`;
+        
+        // Don't show again checkbox
+        const checkboxContainer = document.createElement('div');
+        checkboxContainer.style.display = 'flex';
+        checkboxContainer.style.alignItems = 'center';
+        checkboxContainer.style.marginTop = '8px';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'dont-show-again';
+        checkbox.style.marginRight = '8px';
+        
+        const checkboxLabel = document.createElement('label');
+        checkboxLabel.htmlFor = 'dont-show-again';
+        checkboxLabel.textContent = "Don't show this again";
+        checkboxLabel.style.fontSize = '13px';
+        checkboxLabel.style.color = '#666';
+        
+        checkboxContainer.appendChild(checkbox);
+        checkboxContainer.appendChild(checkboxLabel);
+        
+        // Add elements to DOM
+        buttonsContainer.appendChild(paypalButton);
+        buttonsContainer.appendChild(coffeeButton);
+        
+        popupContainer.appendChild(header);
+        popupContainer.appendChild(content);
+        popupContainer.appendChild(buttonsContainer);
+        popupContainer.appendChild(checkboxContainer);
+        
+        document.body.appendChild(popupContainer);
+        
+        // Event handlers
+        closeButton.addEventListener('click', () => {
+            if (checkbox.checked) {
+                const twoWeeksFromNow = new Date();
+                twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+                localStorage.setItem('donation_popup_shown_until', twoWeeksFromNow.toISOString());
+            }
+            popupContainer.remove();
+        });
+        
+        hasShownDonationPopup = true;
     }
 
     // Function to handle Cypher tab click
@@ -45,6 +193,12 @@ if (document.title === "BloodHound") {
         const currentUrl = window.location.href;
         if (currentUrl !== lastUrl) {
             lastUrl = currentUrl;
+            
+            // Always try to add Neo4j link when URL changes
+            if (!hasAddedNeo4jLink) {
+                addNeo4jLink();
+            }
+            
             if (currentUrl.includes('ui/explore')) {
                 hasLoadedInitialQuery = false;
                 // Reduced timeout to 50ms
@@ -135,7 +289,7 @@ if (document.title === "BloodHound") {
 			
             const backButton = document.createElement('button');
             backButton.className = "inline-flex items-center justify-center whitespace-nowrap rounded-3xl ring-offset-background transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:no-underline bg-primary text-white shadow-outer-1 hover:bg-secondary h-9 px-4 py-1 text-xs";
-            backButton.innerHTML = '<div class="MuiBox-root css-70qvj9"><svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="backward" class="svg-inline--fa fa-backward" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M459.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V96c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L288 214.3V256v41.7L459.5 440.6zM256 352V256 128 96c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4l-192 160C4.2 237.5 0 246.5 0 256s4.2 18.5 11.5 24.6l192 160c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V352z"/></svg></div>';
+            backButton.innerHTML = '<div class="MuiBox-root css-70qvj9"><svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="backward" class="svg-inline--fa fa-backward" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M459.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V96c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L288 214.3V256v41.7L459.5 440.6zM256 352V256 128 96c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l-192 160C4.2 237.5 0 246.5 0 256s4.2 18.5 11.5 24.6l192 160c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29V352z"/></svg></div>';
             backButton.setAttribute('data-nav-buttons', 'true');
             backButton.onclick = () => navigateHistory(-1);
 
@@ -535,8 +689,8 @@ if (document.title === "BloodHound") {
                         
                         // Attempt to populate the query box
                         try {
-                            queryBox.textContent = lastQuery.query;
-                            
+                        queryBox.textContent = lastQuery.query;
+                        
                             // Find the Run button
                             const runButtons = Array.from(document.querySelectorAll('button'));
                             const runButton = runButtons.find(btn => {
@@ -547,11 +701,11 @@ if (document.title === "BloodHound") {
                                      btn.innerHTML.includes('svg'));
                             });
                             
-                            if (runButton) {
-                                console.log("[+] Running last query:", lastQuery.query);
-                                setTimeout(() => {
-                                    runButton.click();
-                                }, 100);
+                        if (runButton) {
+                            console.log("[+] Running last query:", lastQuery.query);
+                            setTimeout(() => {
+                                runButton.click();
+                            }, 100);
                             } else {
                                 console.log("[-] Run button not found");
                             }
@@ -571,25 +725,75 @@ if (document.title === "BloodHound") {
         const navUlXPath = "/html/body/div/div/nav/div[1]/ul[1]";
         const navUl = document.evaluate(navUlXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         
-        if (navUl && !document.querySelector('[data-testid="global_nav-neo4j"]')) {
+        if (navUl) {
+            // Add Neo4j link if not already present
+            if (!document.querySelector('[data-testid="global_nav-neo4j"]')) {
             const li = document.createElement('li');
             li.className = "h-10 px-2 mx-2 flex items-center rounded text-neutral-dark-0 dark:text-neutral-light-1 hover:text-secondary dark:hover:text-secondary-variant-2";
             
-            // Get current host from window.location.origin
-            const origin = window.location.origin;
-            // Extract hostname (server or IP) without port
-            const hostname = window.location.hostname;
-            const neo4jUrl = `http://${hostname}:7474`;
-            
+                // Get current host from window.location.origin
+                const origin = window.location.origin;
+                // Extract hostname (server or IP) without port
+                const hostname = window.location.hostname;
+                const neo4jUrl = `http://${hostname}:7474`;
+                
+                // Create link element that matches existing menu items
+                const existingLinks = navUl.querySelectorAll('a');
+                let templateLink = null;
+                if (existingLinks.length > 0) {
+                    templateLink = existingLinks[0];
+                }
+                
+                if (templateLink) {
+                    // Clone the style from an existing menu item
+                    const linkClone = templateLink.cloneNode(true);
+                    linkClone.setAttribute('data-testid', 'global_nav-neo4j');
+                    linkClone.setAttribute('href', '#');
+                    
+                    // Find and update the icon
+                    const iconSpan = linkClone.querySelector('[data-testid="global_nav-item-label-icon"]');
+                    if (iconSpan) {
+                        iconSpan.innerHTML = `
+                            <svg aria-hidden="true" focusable="false" class="svg-inline--fa" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" style="height: 1.2em; width: 1.2em;">
+                                <path fill="currentColor" d="m101.4251556 161.342804c0-13.2830658-14.4784546-21.6300507-25.9986649-14.9885254-11.5202179 6.6415405-11.5202141 23.3355255 0 29.9770508s25.9986649-1.7054596 25.9986649-14.9885254zm2.8600846 47.4604492c0-13.2830658-14.4784546-21.6300507-25.9986649-14.9885254-11.5202179 6.6415405-11.5202103 23.3355255 0 29.9770508s25.9986649-1.7054596 25.9986649-14.9885254zm114.385643-157.905735c0-13.2830658-14.4784546-21.6300526-25.9986725-14.9885216s-11.5202026 23.3355141.0000153 29.9770432c11.5202026 6.6415252 25.9986572-1.705452 25.9986572-14.9885216zm45.4341583 15.9617424c0-13.2830696-14.4784546-21.6300583-25.9986725-14.9885254-11.5202026 6.6415367-11.5202026 23.3355103.0000153 29.9770432 11.5202026 6.6415252 25.9986572-1.705452 25.9986572-14.9885178zm-149.2164001 192.2655868c0-13.2830811-14.478447-21.6300659-25.9986649-14.9885254-11.5202179 6.6415253-11.5202103 23.3355103.0000076 29.9770508 11.5202103 6.64151 25.9986573-1.7054749 25.9986573-14.9885254zm23.7595977 45.0974732c0-13.2830505-14.4784546-21.6300354-25.9986725-14.9884949-11.5202179 6.64151-11.5202103 23.3355103.0000076 29.9770203 11.5202103 6.6415405 25.9986649-1.7054444 25.9986649-14.9885254zm185.2721405 63.0645446c0-13.2830505-14.4784241-21.6300354-25.9986572-14.9884949-11.5202026 6.64151-11.5202026 23.3355103 0 29.9770203 11.5202332 6.6415406 25.9986572-1.7054443 25.9986572-14.9885254zm31.4452515-37.2209777c0-13.2830505-14.4784546-21.6300354-25.9986877-14.9884949-11.5202026 6.64151-11.5202026 23.3355103 0 29.9770203 11.5202331 6.6415405 25.9986877-1.7054444 25.9986877-14.9885254zm-81.4590149 117.5672607c91.8938599-22.7735901 167.0243225-103.3045044 169.7027893-209.4750519 37.6954041-66.5650177.7892151-153.0506592-74.4309387-171.2645874-56.9179993-50.1389942-138.4701386-70.9333892-215.7419891-45.7142906-19.422638-21.0242051-52.1943512-28.6514583-80.2715454-12.4645891-31.5057068 18.1633615-39.9645005 56.4311151-25.3861733 85.3972025-74.9092293 93.9835662-61.7278118 238.4411773 39.4973946 314.6851043-5.3036805 113.2078247 147.8216095 143.6231079 186.6304626 38.8362122zm-112.7381592-416.2070999c65.1693268-19.819849 133.1513672-5.388176 184.6532288 32.1827202-83.7071838-3.6204338-145.7319641 81.8144645-112.9093475 161.5573845 33.4402618 81.2436066 141.0527802 97.5952911 197.2452545 32.1033478-10.2729492 88.3050842-74.3753662 154.9010315-152.6705933 176.9292908 18.4413757-124.0523071-155.6600037-161.8092041-188.1890259-39.1574707-89.6915665-72.1559448-101.223671-202.8563232-34.5949516-290.074585 53.4895363 62.5425109 145.7842369-4.5809098 106.465435-73.5406876z"></path>
+                            </svg>`;
+                    }
+                    
+                    // Find and update the text 
+                    const textSpan = linkClone.querySelector('[data-testid="global_nav-item-label-text"]');
+                    if (textSpan) {
+                        textSpan.textContent = "Neo4j";
+                    }
+                    
+                    // Clear other attributes that might be copied
+                    linkClone.removeAttribute('href');
+                    linkClone.href = "#";
+                    
+                    // Add the link to the li element
+                    li.innerHTML = '';
+                    li.appendChild(linkClone);
+                    
+                    // Add the li to the nav
+                    navUl.appendChild(li);
+                    
+                    // Add click handler to open Neo4j browser
+                    linkClone.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.open(neo4jUrl, '_blank');
+                    });
+                } else {
+                    // Fallback to basic styling if no template found
             li.innerHTML = `
-                <a href="#" data-testid="global_nav-neo4j" class="h-10 w-auto absolute left-12 flex items-center gap-x-2 hover:underline group-hover:w-full group-hover:opacity-100 group-hover:flex group-hover:items-center group-hover:gap-x-5 cursor-pointer">
+                        <a href="#" data-testid="global_nav-neo4j" class="flex items-center w-full h-10 gap-2 font-medium">
                     <span data-testid="global_nav-item-label-icon" class="flex">
-                        <svg aria-hidden="true" focusable="false" class="svg-inline--fa" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
+                                <svg aria-hidden="true" focusable="false" class="svg-inline--fa" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" style="height: 1.2em; width: 1.2em;">
                             <path fill="currentColor" d="m101.4251556 161.342804c0-13.2830658-14.4784546-21.6300507-25.9986649-14.9885254-11.5202179 6.6415405-11.5202141 23.3355255 0 29.9770508s25.9986649-1.7054596 25.9986649-14.9885254zm2.8600846 47.4604492c0-13.2830658-14.4784546-21.6300507-25.9986649-14.9885254-11.5202179 6.6415405-11.5202103 23.3355255 0 29.9770508s25.9986649-1.7054596 25.9986649-14.9885254zm114.385643-157.905735c0-13.2830658-14.4784546-21.6300526-25.9986725-14.9885216s-11.5202026 23.3355141.0000153 29.9770432c11.5202026 6.6415252 25.9986572-1.705452 25.9986572-14.9885216zm45.4341583 15.9617424c0-13.2830696-14.4784546-21.6300583-25.9986725-14.9885254-11.5202026 6.6415367-11.5202026 23.3355103.0000153 29.9770432 11.5202026 6.6415252 25.9986572-1.705452 25.9986572-14.9885178zm-149.2164001 192.2655868c0-13.2830811-14.478447-21.6300659-25.9986649-14.9885254-11.5202179 6.6415253-11.5202103 23.3355103.0000076 29.9770508 11.5202103 6.64151 25.9986573-1.7054749 25.9986573-14.9885254zm23.7595977 45.0974732c0-13.2830505-14.4784546-21.6300354-25.9986725-14.9884949-11.5202179 6.64151-11.5202103 23.3355103.0000076 29.9770203 11.5202103 6.6415405 25.9986649-1.7054444 25.9986649-14.9885254zm185.2721405 63.0645446c0-13.2830505-14.4784241-21.6300354-25.9986572-14.9884949-11.5202026 6.64151-11.5202026 23.3355103 0 29.9770203 11.5202332 6.6415406 25.9986572-1.7054443 25.9986572-14.9885254zm31.4452515-37.2209777c0-13.2830505-14.4784546-21.6300354-25.9986877-14.9884949-11.5202026 6.64151-11.5202026 23.3355103 0 29.9770203 11.5202331 6.6415405 25.9986877-1.7054444 25.9986877-14.9885254zm-81.4590149 117.5672607c91.8938599-22.7735901 167.0243225-103.3045044 169.7027893-209.4750519 37.6954041-66.5650177.7892151-153.0506592-74.4309387-171.2645874-56.9179993-50.1389942-138.4701386-70.9333892-215.7419891-45.7142906-19.422638-21.0242051-52.1943512-28.6514583-80.2715454-12.4645891-31.5057068 18.1633615-39.9645005 56.4311151-25.3861733 85.3972025-74.9092293 93.9835662-61.7278118 238.4411773 39.4973946 314.6851043-5.3036805 113.2078247 147.8216095 143.6231079 186.6304626 38.8362122zm-112.7381592-416.2070999c65.1693268-19.819849 133.1513672-5.388176 184.6532288 32.1827202-83.7071838-3.6204338-145.7319641 81.8144645-112.9093475 161.5573845 33.4402618 81.2436066 141.0527802 97.5952911 197.2452545 32.1033478-10.2729492 88.3050842-74.3753662 154.9010315-152.6705933 176.9292908 18.4413757-124.0523071-155.6600037-161.8092041-188.1890259-39.1574707-89.6915665-72.1559448-101.223671-202.8563232-34.5949516-290.074585 53.4895363 62.5425109 145.7842369-4.5809098 106.465435-73.5406876z"></path>
                         </svg>
                     </span>
-                    <span data-testid="global_nav-item-label-text" class="whitespace-nowrap min-h-10 font-medium text-xl opacity-0 hidden transition-opacity duration-200 ease-in group-hover:w-full group-hover:opacity-100 group-hover:flex group-hover:items-center group-hover:gap-x-5">Neo4j</span>
-                </a>`;
+                            <span data-testid="global_nav-item-label-text" class="text-xl">Neo4j</span>
+                        </a>
+                    `;
+                    
             navUl.appendChild(li);
 
             // Add click handler to open Neo4j browser
@@ -598,6 +802,13 @@ if (document.title === "BloodHound") {
                 e.preventDefault();
                 window.open(neo4jUrl, '_blank');
             });
+                }
+                
+                hasAddedNeo4jLink = true;
+                console.log("[+] Added Neo4j link to navigation");
+            }
+            
+            // Donate link removed from navigation menu as requested
         }
     }
 
@@ -619,22 +830,28 @@ if (document.title === "BloodHound") {
         // This function is kept for compatibility but doesn't modify width
         
         // Add a style tag to override any problematic media queries
-        const styleId = 'override-flex-basis';
-        if (!document.getElementById(styleId)) {
-            const style = document.createElement('style');
-            style.id = styleId;
-            style.textContent = `
+            const styleId = 'override-flex-basis';
+            if (!document.getElementById(styleId)) {
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = `
                 /* Media query overrides disabled */
-            `;
-            document.head.appendChild(style);
+                `;
+                document.head.appendChild(style);
         }
     }
 
+    // Run code when document is ready
+    if (document.title === "BloodHound") {
+        // Add Neo4j link to all BloodHound pages, not just /ui/explore
+        addNeo4jLink();
+        
+        // Only apply the other changes specific to the explore page
     if (window.location.href.includes('ui/explore')) {
         // Initial check for run button and container width
         checkForRunButton();
-        // Width adjustment disabled due to UI issues
-        // adjustContainerWidth();
+            // Width adjustment disabled due to UI issues
+            // adjustContainerWidth();
         
         // Reduced interval to 100ms
         const intervalId = setInterval(async () => {
@@ -666,6 +883,24 @@ if (document.title === "BloodHound") {
             clearInterval(cypherTabCheckInterval);
             observer.disconnect();
             urlObserver.disconnect();
+            });
+        }
+        
+        // Watch for navigation bar appearing after page loads
+        const navObserver = new MutationObserver(() => {
+            if (!hasAddedNeo4jLink) {
+                addNeo4jLink();
+                
+                // If we've successfully added the link, no need to keep observing
+                if (hasAddedNeo4jLink) {
+                    navObserver.disconnect();
+                }
+            }
+        });
+        
+        navObserver.observe(document.body, {
+            childList: true,
+            subtree: true
         });
     }
 }
